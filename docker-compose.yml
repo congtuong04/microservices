@@ -1,0 +1,106 @@
+services:
+  # Gateway service
+  gateway:
+    image: node:20.4.0
+    container_name: example-gateway
+    restart: unless-stopped
+    command: npm run start:dev
+    working_dir: /app
+    networks:
+      - example-network
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./gateway-service:/app
+    environment:
+      GATEWAY_SERVICE_PORT: 3000
+      AUTH_SERVICE_URL: http://auth:3000
+      USER_SERVICE_URL: http://user:3000
+    depends_on:
+      auth:
+        condition: service_started
+      user:
+        condition: service_started
+
+  # Auth service
+  auth:
+    image: node:20.4.0
+    container_name: example-auth
+    restart: unless-stopped
+    command: npm run start:dev
+    working_dir: /app
+    networks:
+      - example-network
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./auth-service:/app
+    environment:
+      AUTH_SERVICE_PORT: 3000
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: 3306
+      JWT_SECRET: 9f3c8a7d2e5b4c1f6a8d9e0b7c2a1f4e8d6c3b5a7f9e2d1c6b4a8e0d3c7f5b2
+      JWT_EXPIRES_IN: 1h
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # User service
+  user:
+    image: node:20.4.0
+    container_name: example-user
+    restart: unless-stopped
+    command: npm run start:dev
+    working_dir: /app
+    networks:
+      - example-network
+    ports:
+      - "3002:3000"
+    volumes:
+      - ./user-service:/app
+    environment:
+      USER_SERVICE_PORT: 3000
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      JWT_SECRET: 9f3c8a7d2e5b4c1f6a8d9e0b7c2a1f4e8d6c3b5a7f9e2d1c6b4a8e0d3c7f5b2
+      JWT_EXPIRES_IN: 1h
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Database service
+  db:
+    image: mysql:8.3.0
+    container_name: example-user-db
+    restart: unless-stopped
+    networks:
+      - example-network
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot_password"]
+      interval: 5s
+      timeout: 30s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - db-volume:/var/lib/mysql
+      - ./:/docker-entrypoint-initdb.d:ro
+
+networks:
+  example-network:
+    driver: bridge
+
+volumes:
+  db-volume:
