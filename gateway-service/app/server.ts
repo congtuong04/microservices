@@ -1,5 +1,5 @@
 import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import cors from 'cors';
 import helmet from 'helmet';
 import 'dotenv/config';
@@ -17,6 +17,7 @@ app.use(
     credentials: true,
   })
 );
+
 app.use(helmet());
 app.use(express.json());
 
@@ -29,6 +30,10 @@ app.use(
   createProxyMiddleware({
     target: AUTH_SERVICE_URL,
     changeOrigin: true,
+    pathRewrite: (path) => `/auth${path}`,
+    on: {
+      proxyReq: fixRequestBody,
+    },
   })
 );
 
@@ -37,6 +42,10 @@ app.use(
   createProxyMiddleware({
     target: USER_SERVICE_URL,
     changeOrigin: true,
+    pathRewrite: (path) => `/users${path}`,
+    on: {
+      proxyReq: fixRequestBody,
+    },
   })
 );
 
