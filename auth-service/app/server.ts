@@ -9,8 +9,30 @@ import authRoutes from './auth.routes';
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 
+const allowedOrigins = (
+  process.env.ALLOWED_ORIGINS ||
+  'http://localhost:5173,https://frontend-dxq0.onrender.com'
+)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -25,8 +47,7 @@ app.get('/', (_req, res) => {
 
 app.use('/auth', authRoutes);
 
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-
-app.listen(port, "0.0.0.0", () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Auth Service is running on port ${port}`);
+  console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
