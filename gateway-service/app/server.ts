@@ -37,9 +37,6 @@ app.use(
 app.use(helmet());
 app.use(express.json());
 
-/**
- * Health check
- */
 app.get('/', (_req, res) => {
   res.status(200).json({
     message: 'Gateway OK',
@@ -48,14 +45,12 @@ app.get('/', (_req, res) => {
   });
 });
 
-/**
- * AUTH SERVICE
- */
 app.use(
   '/auth',
   createProxyMiddleware({
     target: AUTH_SERVICE_URL,
     changeOrigin: true,
+    pathRewrite: (path) => `/auth${path}`,
     on: {
       proxyReq: fixRequestBody,
       error: (err, _req, res) => {
@@ -73,14 +68,12 @@ app.use(
   })
 );
 
-/**
- * USER SERVICE
- */
 app.use(
   '/users',
   createProxyMiddleware({
     target: USER_SERVICE_URL,
     changeOrigin: true,
+    pathRewrite: (path) => `/users${path}`,
     on: {
       proxyReq: fixRequestBody,
       error: (err, _req, res) => {
@@ -98,9 +91,6 @@ app.use(
   })
 );
 
-/**
- * 404 handler
- */
 app.use((req, res) => {
   res.status(404).json({
     message: 'Route not found',
