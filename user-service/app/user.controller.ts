@@ -83,10 +83,17 @@ export async function createUserHandler(req: Request, res: Response) {
 export async function updateUserHandler(req: Request, res: Response) {
   try {
     const userId = Number(req.params.id);
+    const currentUserId = req.user?.userId;
+    const currentUserRole = req.user?.role;
+
     const { username, password, role } = req.body;
 
     if (Number.isNaN(userId)) {
       return res.status(400).json({ message: 'Invalid user id' });
+    }
+
+    if (!currentUserId || !currentUserRole) {
+      return res.status(401).json({ message: 'Unauthorized' });
     }
 
     const existingUser = await findUserById(userId);
@@ -94,9 +101,24 @@ export async function updateUserHandler(req: Request, res: Response) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    const isAdmin = currentUserRole === 'admin';
+    const isOwner = currentUserId === userId;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({
+        message: 'Forbidden: insufficient permissions',
+      });
+    }
+
     if (role && !ALLOWED_ROLES.includes(role)) {
       return res.status(400).json({
         message: 'role must be admin or user',
+      });
+    }
+
+    if (!isAdmin && role && role !== existingUser.role) {
+      return res.status(403).json({
+        message: 'Forbidden: you cannot change your role',
       });
     }
 
@@ -112,7 +134,7 @@ export async function updateUserHandler(req: Request, res: Response) {
     const updatedUser = await updateUser(userId, {
       username,
       password,
-      role,
+      role: isAdmin ? role : existingUser.role,
     });
 
     return res.status(200).json({
