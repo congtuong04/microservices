@@ -1,106 +1,82 @@
 services:
-  # Gateway service
   gateway:
-    image: node:20.4.0
-    container_name: example-gateway
+    build:
+      context: ./gateway-service
+    container_name: micro-gateway
     restart: unless-stopped
-    command: npm run start:dev
-    working_dir: /app
     networks:
-      - example-network
+      - micro-network
     ports:
       - "3000:3000"
-    volumes:
-      - ./gateway-service:/app
     environment:
+      PORT: 3000
       GATEWAY_SERVICE_PORT: 3000
       AUTH_SERVICE_URL: http://auth:3000
       USER_SERVICE_URL: http://user:3000
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
     depends_on:
       auth:
         condition: service_started
       user:
         condition: service_started
 
-  # Auth service
   auth:
-    image: node:20.4.0
-    container_name: example-auth
+    build:
+      context: ./auth-service
+    container_name: micro-auth
     restart: unless-stopped
-    command: npm run start:dev
-    working_dir: /app
     networks:
-      - example-network
+      - micro-network
     ports:
       - "3001:3000"
-    volumes:
-      - ./auth-service:/app
     environment:
+      PORT: 3000
       AUTH_SERVICE_PORT: 3000
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_HOST: ${MYSQL_HOST}
-      MYSQL_PORT: 3306
-      JWT_SECRET: 9f3c8a7d2e5b4c1f6a8d9e0b7c2a1f4e8d6c3b5a7f9e2d1c6b4a8e0d3c7f5b2
-      JWT_EXPIRES_IN: 1h
-    depends_on:
-      db:
-        condition: service_healthy
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
 
-  # User service
   user:
-    image: node:20.4.0
-    container_name: example-user
+    build:
+      context: ./user-service
+    container_name: micro-user
     restart: unless-stopped
-    command: npm run start:dev
-    working_dir: /app
     networks:
-      - example-network
+      - micro-network
     ports:
       - "3002:3000"
-    volumes:
-      - ./user-service:/app
     environment:
+      PORT: 3000
       USER_SERVICE_PORT: 3000
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_HOST: db
-      MYSQL_PORT: 3306
-      JWT_SECRET: 9f3c8a7d2e5b4c1f6a8d9e0b7c2a1f4e8d6c3b5a7f9e2d1c6b4a8e0d3c7f5b2
-      JWT_EXPIRES_IN: 1h
-    depends_on:
-      db:
-        condition: service_healthy
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
 
-  # Database service
-  db:
-    image: mysql:8.3.0
-    container_name: example-user-db
+  frontend:
+    build:
+      context: ./reactjs/frontend
+    container_name: micro-frontend
     restart: unless-stopped
     networks:
-      - example-network
+      - micro-network
     ports:
-      - "3307:3306"
+      - "5173:5173"
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot_password"]
-      interval: 5s
-      timeout: 30s
-      retries: 5
-      start_period: 10s
-    volumes:
-      - db-volume:/var/lib/mysql
-      - ./:/docker-entrypoint-initdb.d:ro
+      VITE_API_BASE: http://localhost:3000
+    depends_on:
+      gateway:
+        condition: service_started
 
 networks:
-  example-network:
+  micro-network:
     driver: bridge
-
-volumes:
-  db-volume:
