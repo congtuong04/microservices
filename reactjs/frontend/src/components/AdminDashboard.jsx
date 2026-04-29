@@ -32,6 +32,11 @@ export default function AdminDashboard({
     message: "",
   });
 
+  const [showFullToken, setShowFullToken] = useState(false);
+  const [tokenCopied, setTokenCopied] = useState(false);
+
+  const displayToken = showFullToken ? token : maskedToken;
+
   useEffect(() => {
     if (!adminNotice.message) return;
     const timer = setTimeout(() => {
@@ -54,6 +59,21 @@ export default function AdminDashboard({
       created.getFullYear() === now.getFullYear()
     );
   }).length;
+
+  async function handleCopyToken() {
+    if (!token) return;
+
+    try {
+      await navigator.clipboard.writeText(token);
+      setTokenCopied(true);
+
+      setTimeout(() => {
+        setTokenCopied(false);
+      }, 2200);
+    } catch {
+      setTokenCopied(false);
+    }
+  }
 
   async function onCreateUser(e) {
     const result = await handleCreateUser(e);
@@ -205,7 +225,37 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          <div className="token-box">{maskedToken}</div>
+          <div className="security-notice admin-security-notice">
+            <strong>Lưu ý bảo mật:</strong>
+            <span>
+              Đây là JWT token của phiên quản trị hiện tại. Token này có quyền
+              admin nên cần được bảo vệ nghiêm ngặt, không chia sẻ hoặc đưa vào
+              báo cáo công khai.
+            </span>
+          </div>
+
+          <div className="token-actions">
+            <button
+              type="button"
+              className="secondary-btn token-toggle-btn"
+              onClick={() => setShowFullToken((prev) => !prev)}
+            >
+              {showFullToken ? "Ẩn token" : "Xem full token"}
+            </button>
+
+            <button
+              type="button"
+              className="secondary-btn token-toggle-btn"
+              onClick={handleCopyToken}
+              disabled={!token}
+            >
+              {tokenCopied ? "Đã copy" : "Copy token"}
+            </button>
+          </div>
+
+          <div className={`token-box ${showFullToken ? "full-token" : ""}`}>
+            {displayToken}
+          </div>
         </div>
       </section>
 

@@ -22,6 +22,11 @@ export default function UserDashboard({
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
 
+  const [showFullToken, setShowFullToken] = useState(false);
+  const [tokenCopied, setTokenCopied] = useState(false);
+
+  const displayToken = showFullToken ? token : maskedToken;
+
   const techSectionRef = useRef(null);
 
   useEffect(() => {
@@ -140,6 +145,21 @@ export default function UserDashboard({
         });
       }
     }, 80);
+  }
+
+  async function handleCopyToken() {
+    if (!token) return;
+
+    try {
+      await navigator.clipboard.writeText(token);
+      setTokenCopied(true);
+
+      setTimeout(() => {
+        setTokenCopied(false);
+      }, 2200);
+    } catch {
+      setTokenCopied(false);
+    }
   }
 
   async function handleUpdateProfile(e) {
@@ -377,7 +397,51 @@ export default function UserDashboard({
             </div>
           </div>
 
-          <div className="token-box">{maskedToken}</div>
+          <div className="security-notice">
+            <strong>Lưu ý bảo mật:</strong>
+            <span>
+              JWT token là khóa xác thực phiên đăng nhập hiện tại. Không chia sẻ
+              token này cho người khác vì token có thể được dùng để gọi API với
+              quyền của bạn.
+            </span>
+          </div>
+
+          <div className="token-actions">
+            <button
+              type="button"
+              style={{
+                background: "#4f46e5",
+                color: "white",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer"
+              }}
+              onClick={() => setShowFullToken((prev) => !prev)}
+            >
+              {showFullToken ? "Ẩn token" : "Xem full token"}
+            </button>
+
+            <button
+              type="button"
+              style={{
+                background: "#0ea5e9",
+                color: "white",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer"
+              }}
+              onClick={handleCopyToken}
+              disabled={!token}
+            >
+              {tokenCopied ? "Đã copy" : "Copy token"}
+            </button>
+          </div>
+
+          <div className={`token-box ${showFullToken ? "full-token" : ""}`}>
+            {displayToken}
+          </div>
         </div>
       </section>
 
