@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import SystemMonitoring from "./SystemMonitoring";
+import AuditLogs from './AuditLogs';
 
 export default function AdminDashboard({
   user,
@@ -197,6 +199,7 @@ export default function AdminDashboard({
               <span>Permission Level</span>
               <strong>Full User Management</strong>
             </div>
+            <SystemMonitoring />
           </div>
         </div>
 
@@ -255,6 +258,9 @@ export default function AdminDashboard({
 
           <div className={`token-box ${showFullToken ? "full-token" : ""}`}>
             {displayToken}
+          </div>
+          <div className="audit-section">
+            <AuditLogs token={token} />
           </div>
         </div>
       </section>

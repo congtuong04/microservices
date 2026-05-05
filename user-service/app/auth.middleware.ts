@@ -1,14 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
+// 🔷 Define payload
 interface JwtPayload {
   userId: number;
   username: string;
   role: string;
 }
 
+// 🔷 Extend Request (QUAN TRỌNG)
+export interface AuthRequest extends Request {
+  user?: JwtPayload;
+}
+
+// 🔷 Middleware
 export function verifyToken(
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void {
@@ -27,11 +34,11 @@ export function verifyToken(
       process.env.JWT_SECRET as string
     ) as JwtPayload;
 
+    // ✅ FIX: giờ không lỗi nữa
     req.user = decoded;
+
     next();
-    return;
   } catch (error) {
     res.status(401).json({ message: 'Invalid token' });
-    return;
   }
 }

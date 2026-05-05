@@ -91,6 +91,41 @@ app.use(
   })
 );
 
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "gateway-service",
+    timestamp: new Date()
+  });
+});
+
+app.get("/system/health", async (_req, res) => {
+  let authService = "offline";
+  let userService = "offline";
+
+  try {
+    const authCheck = await fetch("http://auth:3000/health");
+    authService = authCheck.ok ? "healthy" : "offline";
+  } catch (error) {
+    authService = "offline";
+  }
+
+  try {
+    const userCheck = await fetch("http://user:3000/health");
+    userService = userCheck.ok ? "healthy" : "offline";
+  } catch (error) {
+    userService = "offline";
+  }
+
+  res.json({
+    gateway: "online",
+    authService,
+    userService,
+    database: "connected",
+    timestamp: new Date()
+  });
+});
+
 app.use((req, res) => {
   res.status(404).json({
     message: 'Route not found',
@@ -104,3 +139,4 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`USER_SERVICE_URL: ${USER_SERVICE_URL}`);
   console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
+

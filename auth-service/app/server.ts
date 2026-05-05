@@ -51,3 +51,11 @@ app.listen(port, '0.0.0.0', () => {
   console.log(`Auth Service is running on port ${port}`);
   console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
 });
+
+app.get("/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "auth-service",
+    timestamp: new Date()
+  });
+});
